@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>COW STRIKE: KỶ NGUYÊN TẬN THẾ 2600</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            margin: 0; overflow: hidden;
+            background: #020617;
+            font-family: 'JetBrains Mono', monospace;
+            user-select: none; touch-action: none; color: #a5f3fc;
+        }
+        canvas { display: block; }
+        .font-cyber { font-family: 'Orbitron', sans-serif; }
+
+        .neon-border {
+            border: 2px solid #22d3ee;
+            box-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+            background: rgba(8, 20, 40, 0.9);
+            backdrop-filter: blur(10px);
+        }
+
+        .screen-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: radial-gradient(circle, rgba(15, 23, 42, 0.7) 0%, rgba(2, 6, 23, 0.9) 100%);
+            z-index: 100; text-align: center; padding: 20px;
+        }
+
+        .story-text {
+            max-width: 600px;
+            line-height: 1.6;
+            animation: fadeIn 2s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-action {
+            background: transparent;
+            border: 2px solid #22d3ee;
+            color: #22d3ee;
+            padding: 12px 40px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            letter-spacing: 0.2em;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .btn-action:hover {
+            background: #22d3ee;
+            color: #020617;
+            box-shadow: 0 0 30px #22d3ee;
+        }
+
+        #fire-btn {
+            position: absolute; bottom: 40px; right: 40px;
+            width: 80px; height: 80px; border-radius: 50%;
+            background: rgba(236, 72, 153, 0.2); border: 4px solid #ec4899;
+            color: #ec4899; font-family: 'Orbitron', sans-serif;
+            font-weight: 900; display: flex; align-items: center; justify-content: center;
+            z-index: 90; box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+            transition: transform 0.1s; cursor: pointer;
+        }
+
+        .quiz-option {
+            background: rgba(34, 211, 238, 0.1);
+            border: 1px solid #22d3ee;
+            padding: 12px; margin: 5px; width: 100%;
+            border-radius: 8px; cursor: pointer; transition: 0.2s;
+            text-align: left;
+        }
+        .quiz-option:hover { background: rgba(34, 211, 238, 0.4); border-color: #fff; }
+
+        .glitch {
+            position: relative;
+            animation: glitch 1s infinite;
+        }
+        @keyframes glitch {
+            0% { transform: skew(0deg); }
+            20% { transform: skew(2deg); }
+            40% { transform: skew(-2deg); }
+            60% { transform: skew(1deg); }
+            100% { transform: skew(0deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-container">
+        <!-- Intro Screen -->
+        <div id="intro-screen" class="screen-overlay">
+            <h1 class="text-5xl md:text-7xl font-cyber mb-6 glitch text-transparent bg-clip-text bg-gradient-to-b from-cyan-300 to-blue-600 font-black">
+                COW STRIKE
+            </h1>
+            <div class="story-text text-sm md:text-base text-cyan-100 uppercase tracking-widest mb-8">
+                <p class="mb-4 text-yellow-400 font-bold">NĂM 2600: TRÁI ĐẤT THẤT THỦ</p>
+                <p class="mb-4">LOÀI BÒ BIẾN DỊ ĐÃ TIẾN HÓA, CHÚNG CÓ THỂ BAY VÀ ĐANG XÂM CHIẾM CÁC TRẠM KHÔNG GIAN CUỐI CÙNG.</p>
+                <p class="mb-4 text-pink-400 font-bold">BẠN LÀ PHI HÀNH GIA CUỐI CÙNG CÒN SỐNG SÓT.</p>
+                <p>HÃY TIÊU DIỆT CHÚNG VÀ KHÔI PHỤC DỮ LIỆU LỊCH SỬ ĐỂ CỨU LẤY NHÂN LOẠI!</p>
+            </div>
+            <button id="btn-start" class="btn-action">KHỞI ĐỘNG PHI THUYỀN</button>
+        </div>
+
+        <!-- HUD -->
+        <div id="hud" class="absolute top-4 left-0 w-full flex justify-between px-6 z-50 hidden">
+            <div class="neon-border p-3 rounded-lg min-w-[180px]">
+                <div class="flex justify-between text-[10px] font-bold text-cyan-400 mb-1">
+                    <span>LÁ CHẮN NĂNG LƯỢNG</span>
+                    <span id="hp-text">100/100</span>
+                </div>
+                <div class="w-full h-2 bg-gray-900 rounded-full overflow-hidden">
+                    <div id="hp-bar" class="h-full bg-gradient-to-r from-pink-500 to-cyan-500 transition-all duration-300" style="width: 100%"></div>
+                </div>
+                <div class="flex justify-between items-end mt-1">
+                    <div id="score-display" class="text-2xl font-cyber text-white">000000</div>
+                    <div class="text-[10px] text-pink-400 font-bold uppercase">Mục tiêu: <span id="kill-count">0</span>/10</div>
+                </div>
+            </div>
+            <div class="neon-border p-3 rounded-lg text-center h-fit">
+                <div id="wave-display" class="text-xl font-cyber text-yellow-400">KỶ NGUYÊN 1</div>
+            </div>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="screen-overlay hidden">
+            <div class="neon-border p-8 rounded-3xl max-w-lg w-full">
+                <h3 class="text-yellow-400 font-cyber mb-4 tracking-widest uppercase">Giải mã Dữ liệu Cổ</h3>
+                <p id="quiz-question" class="text-white mb-6 text-lg font-bold">Câu hỏi?</p>
+                <div id="quiz-options" class="flex flex-col gap-2"></div>
+            </div>
+        </div>
+
+        <!-- Game Over -->
+        <div id="game-over" class="screen-overlay hidden">
+            <h2 class="text-5xl font-cyber text-red-500 mb-2">NHIỆM VỤ THẤT BẠI</h2>
+            <div id="final-score" class="text-3xl font-cyber text-white mb-12">ĐIỂM: 0</div>
+            <button id="btn-restart" class="btn-action">TÁI THIẾT LẬP</button>
+        </div>
+
+        <button id="fire-btn" class="hidden">HỎA LỰC</button>
+    </div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const Sound = {
+        ctx: null,
+        init() { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} },
+        play(freq, type, duration, vol = 0.05, slide = 0) {
+            if(!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            if(slide) osc.frequency.exponentialRampToValueAtTime(slide, this.ctx.currentTime + duration);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+            osc.start(); osc.stop(this.ctx.currentTime + duration);
+        },
+        shoot() { this.play(900, 'sine', 0.1, 0.03, 300); },
+        exp() { this.play(100, 'sawtooth', 0.4, 0.06, 20); },
+        correct() { this.play(600, 'sine', 0.4, 0.1, 1200); },
+        wrong() { this.play(150, 'square', 0.4, 0.1, 60); }
+    };
+
+    const historyMasterList = [
+        { q: "Ai là người lãnh đạo nhân dân đánh bại quân Nam Hán trên sông Bạch Đằng năm 938?", a: ["Lê Hoàn", "Ngô Quyền", "Lý Thường Kiệt", "Trần Hưng Đạo"], c: 1 },
+        { q: "Triều đại nào đã đặt tên nước ta là Đại Cồ Việt?", a: ["Nhà Lý", "Nhà Đinh", "Nhà Trần", "Nhà Tiền Lê"], c: 1 },
+        { q: "Chiến thắng Điện Biên Phủ diễn ra vào năm nào?", a: ["1945", "1954", "1968", "1975"], c: 1 },
+        { q: "Ai là người viết bài thơ thần 'Nam Quốc Sơn Hà'?", a: ["Lý Thường Kiệt", "Trần Hưng Đạo", "Nguyễn Trãi", "Chu Văn An"], c: 0 },
+        { q: "Vị vua nào đã dời đô về Thăng Long năm 1010?", a: ["Lý Thái Tổ", "Đinh Bộ Lĩnh", "Lý Nhân Tông", "Lê Đại Hành"], c: 0 },
+        { q: "Ai là người lãnh đạo khởi nghĩa Lam Sơn?", a: ["Lê Lợi", "Nguyễn Huệ", "Trần Quý Khoáng", "Hồ Quý Ly"], c: 0 },
+        { q: "Vua Quang Trung đại phá quân Thanh vào năm nào?", a: ["1788", "1789", "1802", "1771"], c: 1 },
+        { q: "Ai là tác giả của 'Bình Ngô Đại Cáo'?", a: ["Nguyễn Trãi", "Trần Hưng Đạo", "Lê Thánh Tông", "Chu Văn An"], c: 0 },
+        { q: "Ai được mệnh danh là Vạn Thắng Vương?", a: ["Đinh Bộ Lĩnh", "Ngô Quyền", "Lê Hoàn", "Trần Hưng Đạo"], c: 0 },
+        { q: "Trận 'Điện Biên Phủ trên không' diễn ra vào năm nào?", a: ["1972", "1968", "1975", "1954"], c: 0 },
+        { q: "Lãnh đạo cuộc khởi nghĩa Hai Bà Trưng là ai?", a: ["Trưng Trắc và Trưng Nhị", "Bà Triệu", "Thái hậu Dương Vân Nga", "Nguyễn Thị Minh Khai"], c: 0 },
+        { q: "Thương cảng nổi tiếng nhất nước ta thế kỷ XVII là?", a: ["Vân Đồn", "Hội An", "Hải Phòng", "Đà Nẵng"], c: 1 },
+        { q: "Năm 1945, sự kiện lịch sử trọng đại nào diễn ra?", a: ["Thành lập Đảng", "Cách mạng tháng Tám thành công", "Chiến thắng Điện Biên Phủ", "Giải phóng miền Nam"], c: 1 }
+    ];
+
+    let unusedQuizzes = [];
+    function refreshQuizPool() {
+        unusedQuizzes = [...historyMasterList].sort(() => Math.random() - 0.5);
+    }
+
+    let state = 'START';
+    let score = 0, health = 100, waveCount = 0, killsForQuiz = 0;
+    let width, height, gameTime = 0;
+    const stars = [];
+    const planets = [];
+    let player = { x: 0, y: 0, tx: 0, ty: 0, bullets: [] };
+    let enemies = [], enemyBullets = [], particles = [];
+
+    // ENEMY TYPES
+    const COW_TYPES = [
+        { name: 'BASIC', color: '#fff', spot: '#22d3ee', hp: 2, scale: 1, speed: 0.05, score: 200 },
+        { name: 'PINKY', color: '#fff', spot: '#f472b6', hp: 1, scale: 0.8, speed: 0.08, score: 300 },
+        { name: 'TANK', color: '#fbbf24', spot: '#ea580c', hp: 5, scale: 1.3, speed: 0.03, score: 500 },
+        { name: 'CHIEF', color: '#a78bfa', spot: '#7c3aed', hp: 10, scale: 1.6, speed: 0.02, score: 1000 }
+    ];
+
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        player.x = width/2; player.y = height - 150;
+        player.tx = player.x; player.ty = player.y;
+    }
+
+    function init() {
+        resize();
+        refreshQuizPool();
+        
+        for(let i=0; i<150; i++) {
+            stars.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                s: Math.random() * 2 + 0.5,
+                v: Math.random() * 1.5 + 0.5,
+                alpha: Math.random()
+            });
+        }
+
+        const planetColors = ['#f472b6', '#38bdf8', '#fbbf24', '#a78bfa'];
+        for(let i=0; i<4; i++) {
+            planets.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                r: 40 + Math.random() * 60,
+                v: 0.2 + Math.random() * 0.3,
+                color: planetColors[i],
+                hasRing: Math.random() > 0.5
+            });
+        }
+
+        window.addEventListener('resize', resize);
+        
+        const move = (e) => { 
+            const x = e.touches ? e.touches[0].clientX : e.clientX;
+            const y = e.touches ? e.touches[0].clientY : e.clientY;
+            player.tx = x; player.ty = y;
+        };
+        window.addEventListener('mousemove', move);
+        window.addEventListener('touchmove', (e) => { 
+            if(e.target.id !== 'fire-btn') move(e); 
+        }, {passive:false});
+        
+        document.getElementById('btn-start').onclick = () => {
+            Sound.init();
+            document.getElementById('intro-screen').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            document.getElementById('fire-btn').classList.remove('hidden');
+            state = 'PLAY';
+            spawnWave();
+            requestAnimationFrame(loop);
+        };
+        document.getElementById('btn-restart').onclick = () => location.reload();
+        document.getElementById('fire-btn').addEventListener('pointerdown', () => { if(state === 'PLAY') fire(); });
+        window.addEventListener('mousedown', (e) => { if(state === 'PLAY' && e.button === 0) fire(); });
+    }
+
+    function fire() {
+        Sound.shoot();
+        player.bullets.push({x: player.x, y: player.y-30, v: 16});
+    }
+
+    function showQuiz() {
+        state = 'QUIZ';
+        killsForQuiz = 0;
+        if (unusedQuizzes.length === 0) refreshQuizPool();
+        const quiz = unusedQuizzes.pop();
+
+        document.getElementById('quiz-question').innerText = quiz.q;
+        const opts = document.getElementById('quiz-options');
+        opts.innerHTML = '';
+        quiz.a.forEach((opt, i) => {
+            const b = document.createElement('button');
+            b.className = 'quiz-option text-cyan-300 font-bold';
+            b.innerText = opt;
+            b.onclick = () => {
+                if(i === quiz.c) {
+                    health = Math.min(100, health + 40);
+                    score += 500;
+                    Sound.correct();
+                } else {
+                    health -= 15;
+                    Sound.wrong();
+                }
+                document.getElementById('quiz-screen').classList.add('hidden');
+                state = 'PLAY';
+                if(enemies.length === 0) spawnWave();
+            };
+            opts.appendChild(b);
+        });
+        document.getElementById('quiz-screen').classList.remove('hidden');
+    }
+
+    function spawnWave() {
+        waveCount++;
+        document.getElementById('wave-display').innerText = "KỶ NGUYÊN " + waveCount;
+        const count = 3 + Math.min(5, Math.floor(waveCount/2));
+        
+        for(let i=0; i<count; i++) {
+            let typeIndex = 0;
+            const rand = Math.random();
+            if(waveCount > 2 && rand > 0.7) typeIndex = 1;
+            if(waveCount > 4 && rand > 0.85) typeIndex = 2;
+            if(waveCount > 6 && rand > 0.95) typeIndex = 3;
+
+            const type = COW_TYPES[typeIndex];
+            const x = (i+1)*(width/(count+1));
+            enemies.push({
+                x: x, y: -100, tx: x, ty: 100 + (i%3)*80,
+                type: type,
+                hp: type.hp, 
+                shootTimer: 100 + Math.random()*200
+            });
+        }
+    }
+
+    function drawChubbyCow(en) {
+        ctx.save();
+        const float = Math.sin(gameTime * 0.05 + en.x) * 10;
+        ctx.translate(en.x, en.y + float);
+        ctx.scale(en.type.scale, en.type.scale);
+        
+        const flap = Math.sin(gameTime * 0.2) * 0.4;
+        ctx.fillStyle = en.type.spot + "66";
+        ctx.beginPath(); ctx.ellipse(-40, -10, 20, 10, -0.5 + flap, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(40, -10, 20, 10, 0.5 - flap, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = en.type.color;
+        ctx.shadowBlur = 15; ctx.shadowColor = en.type.spot;
+        ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = en.type.spot;
+        ctx.beginPath(); ctx.arc(15, -10, 12, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-20, 15, 8, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = en.type.color;
+        ctx.beginPath(); ctx.ellipse(-30, -30, 8, 12, -0.5, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(30, -30, 8, 12, 0.5, 0, Math.PI*2); ctx.fill();
+
+        ctx.strokeStyle = "#facc15"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(-15, -38); ctx.quadraticCurveTo(-18, -50, -25, -45); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(15, -38); ctx.quadraticCurveTo(18, -50, 25, -45); ctx.stroke();
+
+        ctx.fillStyle = "rgba(236, 72, 153, 0.3)";
+        ctx.beginPath(); ctx.arc(-20, 5, 8, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(20, 5, 8, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = "#000";
+        ctx.beginPath(); ctx.arc(-12, -5, 5, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(12, -5, 5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.beginPath(); ctx.arc(-13, -7, 2, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(11, -7, 2, 0, Math.PI*2); ctx.fill();
+
+        ctx.fillStyle = "#ffcfd2";
+        ctx.beginPath(); ctx.roundRect(-12, 10, 24, 15, 8); ctx.fill();
+        ctx.restore();
+    }
+
+    function drawBackground() {
+        const grad = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width);
+        grad.addColorStop(0, '#0f172a');
+        grad.addColorStop(1, '#020617');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+
+        planets.forEach(p => {
+            p.y += p.v;
+            if(p.y - p.r > height) {
+                p.y = -p.r * 2;
+                p.x = Math.random() * width;
+            }
+
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            const pg = ctx.createRadialGradient(0, 0, p.r*0.5, 0, 0, p.r);
+            pg.addColorStop(0, p.color);
+            pg.addColorStop(1, 'transparent');
+            ctx.fillStyle = pg;
+            ctx.globalAlpha = 0.3;
+            ctx.beginPath(); ctx.arc(0, 0, p.r * 1.5, 0, Math.PI*2); ctx.fill();
+            ctx.globalAlpha = 0.6;
+            ctx.fillStyle = p.color;
+            ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI*2); ctx.fill();
+            if(p.hasRing) {
+                ctx.strokeStyle = p.color;
+                ctx.lineWidth = 4;
+                ctx.globalAlpha = 0.4;
+                ctx.beginPath(); ctx.ellipse(0, 0, p.r * 2, p.r * 0.4, 0.4, 0, Math.PI*2); ctx.stroke();
+            }
+            ctx.restore();
+        });
+
+        stars.forEach(s => {
+            s.y += s.v;
+            if(s.y > height) s.y = -10;
+            ctx.fillStyle = `rgba(255, 255, 255, ${Math.abs(Math.sin(gameTime*0.01 + s.alpha)) * 0.5})`;
+            ctx.fillRect(s.x, s.y, s.s, s.s);
+        });
+        ctx.globalAlpha = 1;
+    }
+
+    function update() {
+        if (state !== 'PLAY') return;
+        gameTime++;
+        player.x += (player.tx - player.x) * 0.15;
+        player.y += (player.ty - player.y) * 0.15;
+
+        player.bullets.forEach((b, i) => {
+            b.y -= b.v;
+            if(b.y < -50) player.bullets.splice(i, 1);
+        });
+
+        enemies.forEach((en, i) => {
+            en.y += (en.ty - en.y) * en.type.speed;
+            en.x = en.tx + Math.sin(gameTime * (en.type.name === 'PINKY' ? 0.08 : 0.03)) * (en.type.name === 'PINKY' ? 60 : 30);
+
+            en.shootTimer--;
+            if(en.shootTimer <= 0) {
+                const bulletSpeed = en.type.name === 'TANK' ? 8 : 5;
+                enemyBullets.push({ x: en.x, y: en.y + 30, v: bulletSpeed, color: en.type.spot });
+                en.shootTimer = 150 + Math.random()*200;
+            }
+
+            player.bullets.forEach((b, bi) => {
+                const dist = Math.hypot(b.x - en.x, b.y - en.y);
+                const hitRadius = 45 * en.type.scale;
+                if(dist < hitRadius) {
+                    en.hp--;
+                    player.bullets.splice(bi, 1);
+                    createExp(b.x, b.y, en.type.spot, 3);
+                    
+                    if(en.hp <= 0) {
+                        enemies.splice(i, 1);
+                        score += en.type.score;
+                        killsForQuiz++;
+                        Sound.exp();
+                        createExp(en.x, en.y, en.type.spot, 20);
+                    }
+                }
+            });
+        });
+
+        if(killsForQuiz >= 10) { showQuiz(); return; }
+
+        enemyBullets.forEach((eb, i) => {
+            eb.y += eb.v;
+            if(Math.hypot(eb.x - player.x, eb.y - player.y) < 35) {
+                health -= 15;
+                enemyBullets.splice(i, 1);
+                createExp(player.x, player.y, '#f87171', 10);
+            }
+            if(eb.y > height) enemyBullets.splice(i, 1);
+        });
+
+        particles.forEach((p, i) => {
+            p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+            if(p.life <= 0) particles.splice(i, 1);
+        });
+
+        if(health <= 0) {
+            state = 'OVER';
+            document.getElementById('game-over').classList.remove('hidden');
+            document.getElementById('final-score').innerText = "ĐIỂM SỐ: " + score;
+        }
+
+        if(enemies.length === 0) spawnWave();
+        
+        document.getElementById('score-display').innerText = score.toString().padStart(6, '0');
+        document.getElementById('hp-bar').style.width = health + '%';
+        document.getElementById('hp-text').innerText = Math.max(0, Math.ceil(health)) + "/100";
+        document.getElementById('kill-count').innerText = killsForQuiz;
+    }
+
+    function createExp(x, y, color, count) {
+        for(let i=0; i<count; i++) {
+            particles.push({
+                x, y, vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12,
+                life: 1, s: Math.random()*6+2, color
+            });
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, width, height);
+        drawBackground();
+
+        // Player Ship
+        ctx.save();
+        ctx.translate(player.x, player.y);
+        ctx.shadowBlur = 20; ctx.shadowColor = '#22d3ee';
+        ctx.fillStyle = '#22d3ee';
+        ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(-20, 20); ctx.lineTo(20, 20); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#f472b6';
+        ctx.beginPath(); ctx.ellipse(0, 22, 10, 5 + Math.random()*10, 0, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+
+        enemies.forEach(en => drawChubbyCow(en));
+        
+        enemyBullets.forEach(eb => {
+            ctx.fillStyle = eb.color;
+            ctx.shadowBlur = 10; ctx.shadowColor = eb.color;
+            ctx.beginPath(); ctx.arc(eb.x, eb.y, 6, 0, Math.PI*2); ctx.fill();
+        });
+
+        ctx.fillStyle = '#22d3ee';
+        ctx.shadowBlur = 15; ctx.shadowColor = '#22d3ee';
+        player.bullets.forEach(b => {
+            ctx.fillRect(b.x-2, b.y, 4, 20);
+        });
+
+        ctx.shadowBlur = 0;
+        particles.forEach(p => {
+            ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, p.s, p.s);
+        });
+        ctx.globalAlpha = 1;
+    }
+
+    function loop() {
+        update(); draw();
+        if(state === 'PLAY' || state === 'QUIZ') requestAnimationFrame(loop);
+    }
+
+    init();
+</script>
+</body>
+</html>
